@@ -1,19 +1,17 @@
 import Jimp from "jimp";
 import sharp from "sharp";
+import { SpeechBubbleOptions } from "sticker.js";
 import { FONT_PATH } from "../constants.js";
 import { loadFont } from "./load-font.js";
 import { measureText, measureTextHeight, print } from "./print.js";
 
-export interface TextToImageOptions {
+export type TextToImageOptions = {
   text: string;
-  imagePath: string;
-  overlayPath?: string;
-  centerX: number;
-  centerY: number;
-  boundingBoxWidth: number;
-  boundingBoxHeight: number;
-  boundingBoxAngle: number;
-}
+} & SpeechBubbleOptions;
+
+export type ImageToImageOptions = {
+  image: Jimp;
+} & SpeechBubbleOptions;
 
 const font = await (loadFont(FONT_PATH) as ReturnType<typeof Jimp.loadFont>);
 
@@ -86,6 +84,51 @@ export const addTextToImage = async ({
   }
 
   return await sharp(await image.getBufferAsync(Jimp.MIME_PNG))
+    .webp()
+    .toBuffer();
+};
+
+export const addImageToImage = async ({
+  image,
+  imagePath,
+  overlayPath,
+  centerX,
+  centerY,
+  boundingBoxWidth,
+  boundingBoxHeight,
+  boundingBoxAngle,
+}: ImageToImageOptions) => {
+  const targetImage = await Jimp.read(imagePath);
+  const imageWidth = image.getWidth();
+  const imageHeight = image.getHeight();
+
+  const newWidth = Math.sqrt(
+    Math.pow(boundingBoxHeight, 2) /
+      (Math.pow(imageHeight, 2) / Math.pow(imageWidth, 2) +
+        Math.pow(boundingBoxHeight, 2) / Math.pow(boundingBoxWidth, 2))
+  );
+
+  const newHeight = newWidth * (imageHeight / imageWidth);
+
+  try {
+    image.scaleToFit(newWidth, newHeight);
+
+    image.rotate(boundingBoxAngle);
+
+    const padLeft = image.bitmap.width / 2;
+    const padTop = image.bitmap.height / 2;
+
+    targetImage.blit(image, centerX - padLeft, centerY - padTop);
+
+    if (overlayPath) {
+      targetImage.blit(await Jimp.read(overlayPath), 0, 0);
+    }
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+
+  return await sharp(await targetImage.getBufferAsync(Jimp.MIME_PNG))
     .webp()
     .toBuffer();
 };

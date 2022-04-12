@@ -1,90 +1,113 @@
 import { Context, Telegraf } from "telegraf";
-import { Update } from "telegraf/typings/core/types/typegram";
-import { addTextToImage } from "../utils/sticker.js";
+import axios from "axios";
+import sharp from "sharp";
+import { Url } from "url";
+import Jimp from "jimp";
 import { v4 as uuid } from "uuid";
+import { Update } from "telegraf/typings/core/types/typegram";
+
+import { addImageToImage, addTextToImage } from "../utils/sticker.js";
+import { SpeechBubbleOptions, StickerCommandOptions } from "sticker.js";
 import { STICKER_CHAT_ID } from "../constants.js";
 
-const addTextToMeow = async (text: string) => {
-  return addTextToImage({
-    text,
-    imagePath: "./src/assets/dennimeow.png",
-    overlayPath: "./src/assets/dennimeow2.png",
-    centerX: 257,
-    centerY: 144,
-    boundingBoxWidth: 416,
-    boundingBoxHeight: 248,
-    boundingBoxAngle: 0,
+const stickers: StickerCommandOptions[] = [
+  {
+    name: "meow",
+    command: "meow",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/dennimeow.png",
+      overlayPath: "./src/assets/dennimeow2.png",
+      centerX: 257,
+      centerY: 144,
+      boundingBoxWidth: 416,
+      boundingBoxHeight: 248,
+      boundingBoxAngle: 0,
+    },
+  },
+  {
+    name: "nom",
+    command: "nom",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/denninom.png",
+      centerX: 90,
+      centerY: 97,
+      boundingBoxWidth: 183,
+      boundingBoxHeight: 111,
+      boundingBoxAngle: 35,
+    },
+  },
+  {
+    name: "heart",
+    command: "heart",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/denniheart.png",
+      centerX: 274,
+      centerY: 82,
+      boundingBoxWidth: 167,
+      boundingBoxHeight: 112,
+      boundingBoxAngle: 0,
+    },
+  },
+];
+
+export const replyWithSticker = async (
+  ctx: any,
+  speechBubbleOptions: SpeechBubbleOptions
+) => {
+  const stickerUrl: Url = await ctx.telegram.getFileLink(
+    ctx.message.sticker.file_id
+  );
+
+  const inputImage = (
+    await axios({
+      url: stickerUrl.href,
+      responseType: "arraybuffer",
+    })
+  ).data as Buffer;
+
+  const sticker = await Jimp.read(await sharp(inputImage).png().toBuffer());
+
+  const stickerImage = await addImageToImage({
+    image: sticker,
+    ...speechBubbleOptions,
+  });
+
+  if (!stickerImage) {
+    return;
+  }
+
+  ctx.replyWithSticker({
+    source: stickerImage,
   });
 };
 
-const addTextToNom = async (text: string) => {
-  return addTextToImage({
-    text,
-    imagePath: "./src/assets/denninom.png",
-    centerX: 90,
-    centerY: 97,
-    boundingBoxWidth: 183,
-    boundingBoxHeight: 111,
-    boundingBoxAngle: 35,
-  });
-};
+export const registerStickerCommands = (
+  bot: Telegraf<Context<Update>>,
+  state: {
+    pendingActions: Record<string, (ctx: any) => void>;
+  }
+) => {
+  stickers.forEach((sticker) => {
+    bot.command(sticker.command, async (ctx) => {
+      if (!ctx.message.text.split(" ").slice(1).join(" ")) {
+        state.pendingActions[ctx.message.from.id] = async (ctx) => {
+          await replyWithSticker(ctx, sticker.speechBubbleOptions);
+        };
+        return;
+      }
 
-const addTextToHeart = async (text: string) => {
-  return addTextToImage({
-    text,
-    imagePath: "./src/assets/denniheart.png",
-    centerX: 274,
-    centerY: 82,
-    boundingBoxWidth: 167,
-    boundingBoxHeight: 112,
-    boundingBoxAngle: 0,
-  });
-};
+      const stickerImage = await addTextToImage({
+        text: ctx.message.text.split(" ").slice(1).join(" "),
+        ...sticker.speechBubbleOptions,
+      });
 
-export const registerNomCommand = (bot: Telegraf<Context<Update>>) => {
-  bot.command("nom", async (ctx) => {
-    const stickerImage = await addTextToNom(
-      ctx.message.text.split(" ").slice(1).join(" ")
-    );
+      if (!stickerImage) {
+        return;
+      }
 
-    if (!stickerImage) {
-      return;
-    }
-
-    ctx.replyWithSticker({
-      source: stickerImage,
-    });
-  });
-};
-
-export const registerHeartCommand = (bot: Telegraf<Context<Update>>) => {
-  bot.command("heart", async (ctx) => {
-    const stickerImage = await addTextToHeart(
-      ctx.message.text.split(" ").slice(1).join(" ")
-    );
-
-    if (!stickerImage) {
-      return;
-    }
-
-    ctx.replyWithSticker({
-      source: stickerImage,
-    });
-  });
-};
-
-export const registerMeowCommand = (bot: Telegraf<Context<Update>>) => {
-  bot.command("meow", async (ctx) => {
-    const stickerImage = await addTextToMeow(
-      ctx.message.text.split(" ").slice(1).join(" ")
-    );
-
-    if (!stickerImage) {
-      return;
-    }
-
-    ctx.replyWithSticker({
-      source: stickerImage,
+      ctx.replyWithSticker({
+        source: stickerImage,
+      });
     });
   });
 };
@@ -95,58 +118,31 @@ export const registerInlineCommand = (bot: Telegraf<Context<Update>>) => {
       return;
     }
 
-    const nomSticker = await addTextToNom(ctx.inlineQuery.query);
+    const stickerBuffers = (
+      await Promise.all(
+        stickers.map((sticker) =>
+          addTextToImage({
+            text: ctx.inlineQuery.query,
+            ...sticker.speechBubbleOptions,
+          })
+        )
+      )
+    ).filter((stickerBuffer) => stickerBuffer !== null) as Buffer[];
 
-    if (!nomSticker) {
-      return;
-    }
-
-    const nomStickerInstance = await ctx.telegram.sendSticker(STICKER_CHAT_ID, {
-      source: nomSticker,
-    });
-
-    const heartSticker = await addTextToHeart(ctx.inlineQuery.query);
-
-    if (!heartSticker) {
-      return;
-    }
-
-    const heartStickerInstance = await ctx.telegram.sendSticker(
-      STICKER_CHAT_ID,
-      {
-        source: heartSticker,
-      }
+    const sentStickers = await Promise.all(
+      stickerBuffers.map(async (stickerBuffer) => {
+        return await ctx.telegram.sendSticker(STICKER_CHAT_ID, {
+          source: stickerBuffer,
+        });
+      })
     );
 
-    const meowSticker = await addTextToMeow(ctx.inlineQuery.query);
-
-    if (!meowSticker) {
-      return;
-    }
-
-    const meowStickerInstance = await ctx.telegram.sendSticker(
-      STICKER_CHAT_ID,
-      {
-        source: meowSticker,
-      }
+    ctx.answerInlineQuery(
+      sentStickers.map((sticker) => ({
+        id: uuid(),
+        type: "sticker",
+        sticker_file_id: sticker.sticker.file_id,
+      }))
     );
-
-    ctx.answerInlineQuery([
-      {
-        id: uuid(),
-        type: "sticker",
-        sticker_file_id: nomStickerInstance.sticker.file_id,
-      },
-      {
-        id: uuid(),
-        type: "sticker",
-        sticker_file_id: heartStickerInstance.sticker.file_id,
-      },
-      {
-        id: uuid(),
-        type: "sticker",
-        sticker_file_id: meowStickerInstance.sticker.file_id,
-      },
-    ]);
   });
 };
