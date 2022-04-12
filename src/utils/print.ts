@@ -59,9 +59,7 @@ const textToCodepoints = (font: Font, text: string) => {
       const nextXChars = [...nextChars]
         .slice(0, x)
         .filter((a) => a > 0)
-        .reduce((prev, cur) => prev * cur, 1)
-        .toString();
-      // .join("_");
+        .join("_");
 
       if (font.chars[nextXChars]) {
         ret.push(nextXChars);

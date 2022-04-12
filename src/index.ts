@@ -1,6 +1,5 @@
 import { Context, Telegraf } from "telegraf";
 import { Update } from "typegram";
-
 import { BOT_TOKEN } from "./constants.js";
 import {
   registerHeartCommand,
