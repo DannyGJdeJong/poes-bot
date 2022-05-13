@@ -1,16 +1,16 @@
-import { Context, Telegraf } from "telegraf";
-import { Update } from "typegram";
+import { Telegraf } from "telegraf";
+
 import { BOT_TOKEN } from "./constants.js";
 import {
   registerInlineCommand,
   registerStickerCommands,
 } from "./commands/sticker.js";
 
-const bot: Telegraf<Context<Update>> = new Telegraf(BOT_TOKEN);
+import type { Bot, State } from "./types";
 
-const state: {
-  pendingActions: Record<string, (ctx: any) => Promise<void>>;
-} = {
+const bot: Bot = new Telegraf(BOT_TOKEN);
+
+const state: State = {
   pendingActions: {},
 };
 
@@ -25,9 +25,9 @@ bot.help((ctx) => {
 /heart \\[text\\] \\- Creates a sticker from text
 /meow \\[text\\] \\- Creates a sticker from text
 
-/nom - Follow up with a sticker
-/heart - Follow up with a sticker
-/meow - Follow up with a sticker
+/nom - Follow up with text, a sticker or an image
+/heart - Follow up with text, a sticker or an image
+/meow - Follow up with text, a sticker or an image
 
 *Auxiliary commands*:
 /start \\- Starts the bot
@@ -37,6 +37,9 @@ bot.help((ctx) => {
 
 bot.command("quit", (ctx) => {});
 
+registerInlineCommand(bot);
+registerStickerCommands(bot, state);
+
 bot.on("sticker", async (ctx) => {
   const pendingAction =
     state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
@@ -44,16 +47,19 @@ bot.on("sticker", async (ctx) => {
   await pendingAction(ctx);
 });
 
-// bot.on("text", async (ctx) => {
-//   const pendingAction =
-//     state.pendingActions[ctx.message.from.id.toString()] || (() => {});
-//   pendingAction(ctx);
+bot.on("text", async (ctx) => {
+  const pendingAction =
+    state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
 
-//   // delete state.pendingActions[ctx.message.from.id.toString()];
-// });
+  await pendingAction(ctx);
+});
 
-registerInlineCommand(bot);
-registerStickerCommands(bot, state);
+bot.on("photo", async (ctx) => {
+  const pendingAction =
+    state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
+
+  await pendingAction(ctx);
+});
 
 bot.launch();
 

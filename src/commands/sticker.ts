@@ -1,14 +1,13 @@
-import { Context, Telegraf } from "telegraf";
 import axios from "axios";
 import sharp from "sharp";
-import { Url } from "url";
 import Jimp from "jimp";
 import { v4 as uuid } from "uuid";
-import { Update } from "telegraf/typings/core/types/typegram";
 
 import { addImageToImage, addTextToImage } from "../utils/sticker.js";
 import { SpeechBubbleOptions, StickerCommandOptions } from "sticker.js";
 import { STICKER_CHAT_ID } from "../constants.js";
+
+import type { Bot, GenericContext, SpecifiedContext, State } from "../types";
 
 const stickers: StickerCommandOptions[] = [
   {
@@ -50,25 +49,27 @@ const stickers: StickerCommandOptions[] = [
   },
 ];
 
-export const replyWithSticker = async (
-  ctx: any,
+const onStickerHandler = async (
+  ctx: SpecifiedContext<"sticker">,
   speechBubbleOptions: SpeechBubbleOptions
 ) => {
-  const stickerUrl: Url = await ctx.telegram.getFileLink(
+  const inputStickerUrl = await ctx.telegram.getFileLink(
     ctx.message.sticker.file_id
   );
 
-  const inputImage = (
+  const inputStickerBuffer = (
     await axios({
-      url: stickerUrl.href,
+      url: inputStickerUrl.href,
       responseType: "arraybuffer",
     })
   ).data as Buffer;
 
-  const sticker = await Jimp.read(await sharp(inputImage).png().toBuffer());
+  const inputStickerImage = await Jimp.read(
+    await sharp(inputStickerBuffer).png().toBuffer()
+  );
 
   const stickerImage = await addImageToImage({
-    image: sticker,
+    image: inputStickerImage,
     ...speechBubbleOptions,
   });
 
@@ -81,23 +82,98 @@ export const replyWithSticker = async (
   });
 };
 
-export const registerStickerCommands = (
-  bot: Telegraf<Context<Update>>,
-  state: {
-    pendingActions: Record<string, (ctx: any) => void>;
-  }
+const onTextHandler = async (
+  ctx: SpecifiedContext<"text">,
+  speechBubbleOptions: SpeechBubbleOptions
 ) => {
+  const stickerImage = await addTextToImage({
+    text: ctx.message.text,
+    ...speechBubbleOptions,
+  });
+
+  if (!stickerImage) {
+    return;
+  }
+
+  ctx.replyWithSticker({
+    source: stickerImage,
+  });
+};
+
+const onPhotoHandler = async (
+  ctx: SpecifiedContext<"photo">,
+  speechBubbleOptions: SpeechBubbleOptions
+) => {
+  const inputPhotoUrl = await ctx.telegram.getFileLink(
+    ctx.message.photo[0].file_id
+  );
+
+  const inputPhotoBuffer = (
+    await axios({
+      url: inputPhotoUrl.href,
+      responseType: "arraybuffer",
+    })
+  ).data as Buffer;
+
+  const inputPhotoImage = await Jimp.read(
+    await sharp(inputPhotoBuffer).png().toBuffer()
+  );
+
+  const stickerImage = await addImageToImage({
+    image: inputPhotoImage,
+    ...speechBubbleOptions,
+  });
+
+  if (!stickerImage) {
+    return;
+  }
+
+  ctx.replyWithSticker({
+    source: stickerImage,
+  });
+};
+
+const onMessageHandler = async (
+  ctx: GenericContext,
+  speechBubbleOptions: SpeechBubbleOptions
+) => {
+  if (!ctx.message) {
+    return;
+  }
+
+  if ("sticker" in ctx.message) {
+    await onStickerHandler(
+      ctx as SpecifiedContext<"sticker">,
+      speechBubbleOptions
+    );
+  }
+
+  if ("text" in ctx.message) {
+    await onTextHandler(ctx as SpecifiedContext<"text">, speechBubbleOptions);
+  }
+
+  if ("photo" in ctx.message) {
+    await onPhotoHandler(ctx as SpecifiedContext<"photo">, speechBubbleOptions);
+  }
+};
+
+export const registerStickerCommands = (bot: Bot, state: State) => {
   stickers.forEach((sticker) => {
     bot.command(sticker.command, async (ctx) => {
-      if (!ctx.message.text.split(" ").slice(1).join(" ")) {
-        state.pendingActions[ctx.message.from.id] = async (ctx) => {
-          await replyWithSticker(ctx, sticker.speechBubbleOptions);
-        };
+      // Split the command from the input text
+      // e.g. "/nom test" becomes "test"
+      const inputText = ctx.message.text.split(" ").slice(1).join(" ");
+
+      // If no input text is defined, add pending action and return
+      if (!inputText) {
+        state.pendingActions[ctx.message.from.id] = async (ctx) =>
+          await onMessageHandler(ctx, sticker.speechBubbleOptions);
         return;
       }
 
+      // If input text is defined, handle normally
       const stickerImage = await addTextToImage({
-        text: ctx.message.text.split(" ").slice(1).join(" "),
+        text: inputText,
         ...sticker.speechBubbleOptions,
       });
 
@@ -112,7 +188,7 @@ export const registerStickerCommands = (
   });
 };
 
-export const registerInlineCommand = (bot: Telegraf<Context<Update>>) => {
+export const registerInlineCommand = (bot: Bot) => {
   bot.on("inline_query", async (ctx) => {
     if (!ctx.inlineQuery.query) {
       return;
