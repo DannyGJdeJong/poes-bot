@@ -1,13 +1,11 @@
-FROM node:16
+FROM node:18-alpine3.15
 
 WORKDIR /app
-COPY package.json yarn.lock ./
 
+COPY package.json yarn.lock ./
 RUN yarn
 
-COPY . .
-RUN yarn build
-
+COPY nodemon.json tsconfig.json ./
+COPY src ./src/
 ENV NODE_ENV=production
-
-CMD ["node", "build"]
+CMD ["npm", "run", "app"]

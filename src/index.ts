@@ -1,10 +1,10 @@
 import { Telegraf } from "telegraf";
 
-import { BOT_TOKEN } from "./constants.js";
+import { BOT_TOKEN } from "./constants";
 import {
   registerInlineCommand,
   registerStickerCommands,
-} from "./commands/sticker.js";
+} from "./commands/sticker";
 
 import type { Bot, State } from "./types";
 

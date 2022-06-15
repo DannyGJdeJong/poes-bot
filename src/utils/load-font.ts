@@ -1,7 +1,7 @@
 import Jimp from "jimp";
 import Path from "path";
 import { XMLParser } from "fast-xml-parser";
-import { Font, FontChar, FontCommon, FontInfo } from "../types/font";
+import type { Font, FontChar, FontCommon, FontInfo } from "../types";
 import fs from "fs";
 
 const loadPages = async (dir: string, pages: string[]) => {

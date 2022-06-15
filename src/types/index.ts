@@ -1,8 +1,8 @@
-import { GenericContext } from "./telegrafTypes.js";
+import type { GenericContext } from "./telegrafTypes";
 
-export * from "./font.js";
-export * from "./sticker.js";
-export * from "./telegrafTypes.js";
+export * from "./font";
+export * from "./sticker";
+export * from "./telegrafTypes";
 
 export type State = {
   // Mapping of UserId -> Action

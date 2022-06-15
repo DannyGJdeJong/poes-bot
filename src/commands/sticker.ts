@@ -3,9 +3,9 @@ import sharp from "sharp";
 import Jimp from "jimp";
 import { v4 as uuid } from "uuid";
 
-import { addImageToImage, addTextToImage } from "../utils/sticker.js";
-import { SpeechBubbleOptions, StickerCommandOptions } from "sticker.js";
-import { STICKER_CHAT_ID } from "../constants.js";
+import { addImageToImage, addTextToImage } from "../utils/sticker";
+import { SpeechBubbleOptions, StickerCommandOptions } from "sticker";
+import { STICKER_CHAT_ID } from "../constants";
 
 import type { Bot, GenericContext, SpecifiedContext, State } from "../types";
 

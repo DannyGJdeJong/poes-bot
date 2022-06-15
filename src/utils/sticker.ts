@@ -1,9 +1,9 @@
 import Jimp from "jimp";
 import sharp from "sharp";
-import { SpeechBubbleOptions } from "sticker.js";
-import { FONT_PATH } from "../constants.js";
-import { loadFont } from "./load-font.js";
-import { measureText, measureTextHeight, print } from "./print.js";
+import { SpeechBubbleOptions } from "../types";
+import { FONT_PATH } from "../constants";
+import { loadFont } from "./load-font";
+import { measureText, measureTextHeight, print } from "./print";
 
 export type TextToImageOptions = {
   text: string;

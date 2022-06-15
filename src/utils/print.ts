@@ -1,5 +1,5 @@
 import Jimp from "jimp";
-import { Font, FontChar } from "../types/font";
+import type { Font, FontChar } from "../types";
 
 const constants = {
   AUTO: -1,
