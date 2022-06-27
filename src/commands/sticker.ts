@@ -21,6 +21,7 @@ const stickers: StickerCommandOptions[] = [
       boundingBoxWidth: 416,
       boundingBoxHeight: 248,
       boundingBoxAngle: 0,
+      boundingBoxShape: "ellipse",
     },
   },
   {
@@ -33,6 +34,7 @@ const stickers: StickerCommandOptions[] = [
       boundingBoxWidth: 183,
       boundingBoxHeight: 111,
       boundingBoxAngle: 35,
+      boundingBoxShape: "ellipse",
     },
   },
   {
@@ -45,6 +47,34 @@ const stickers: StickerCommandOptions[] = [
       boundingBoxWidth: 167,
       boundingBoxHeight: 112,
       boundingBoxAngle: 0,
+      boundingBoxShape: "ellipse",
+    },
+  },
+  {
+    name: "nerd",
+    command: "nerd",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/denninerd.png",
+      centerX: 245,
+      centerY: 82,
+      boundingBoxWidth: 414,
+      boundingBoxHeight: 132,
+      boundingBoxAngle: 0,
+      boundingBoxShape: "rectangle",
+    },
+  },
+  {
+    name: "admire",
+    command: "admire",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/denniadmire.png",
+      overlayPath: "./src/assets/denniadmire2.png",
+      centerX: 104,
+      centerY: 128,
+      boundingBoxWidth: 335,
+      boundingBoxHeight: 220,
+      boundingBoxAngle: 49,
+      boundingBoxShape: "ellipse",
     },
   },
 ];

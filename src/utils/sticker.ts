@@ -1,6 +1,6 @@
 import Jimp from "jimp";
 import sharp from "sharp";
-import { SpeechBubbleOptions } from "../types";
+import type { BoundingBoxShape, SpeechBubbleOptions } from "../types";
 import { FONT_PATH } from "../constants";
 import { loadFont } from "./load-font";
 import { measureText, measureTextHeight, print } from "./print";
@@ -15,6 +15,50 @@ export type ImageToImageOptions = {
 
 const font = await (loadFont(FONT_PATH) as ReturnType<typeof Jimp.loadFont>);
 
+const getNewDimensions = (
+  sourceWidth: number,
+  sourceHeight: number,
+  targetWidth: number,
+  targetHeight: number,
+  boundingBoxShape: BoundingBoxShape
+): { width: number; height: number } => {
+  let width;
+  let height;
+
+  switch (boundingBoxShape) {
+    case "ellipse":
+      width = Math.sqrt(
+        Math.pow(targetHeight, 2) /
+          (Math.pow(sourceHeight, 2) / Math.pow(sourceWidth, 2) +
+            Math.pow(targetHeight, 2) / Math.pow(targetWidth, 2))
+      );
+
+      height = width * (sourceHeight / sourceWidth);
+
+      break;
+
+    case "rectangle":
+      let scale = Math.min(
+        targetWidth / sourceWidth,
+        targetHeight / sourceHeight
+      );
+
+      width = sourceWidth * scale;
+      height = sourceHeight * scale;
+
+      break;
+
+    default:
+      width = targetWidth;
+      height = targetHeight;
+  }
+
+  return {
+    width,
+    height,
+  };
+};
+
 export const addTextToImage = async ({
   text,
   imagePath,
@@ -24,6 +68,7 @@ export const addTextToImage = async ({
   boundingBoxWidth,
   boundingBoxHeight,
   boundingBoxAngle,
+  boundingBoxShape,
 }: TextToImageOptions) => {
   const image = await Jimp.read(imagePath);
 
@@ -38,13 +83,13 @@ export const addTextToImage = async ({
     measureTextHeight(font, text, fontCanvasWidth)
   );
 
-  const newWidth = Math.sqrt(
-    Math.pow(boundingBoxHeight, 2) /
-      (Math.pow(textHeight, 2) / Math.pow(textWidth, 2) +
-        Math.pow(boundingBoxHeight, 2) / Math.pow(boundingBoxWidth, 2))
+  const { width: newWidth, height: newHeight } = getNewDimensions(
+    textWidth,
+    textHeight,
+    boundingBoxWidth,
+    boundingBoxHeight,
+    boundingBoxShape
   );
-
-  const newHeight = newWidth * (textHeight / textWidth);
 
   try {
     print(
@@ -97,18 +142,19 @@ export const addImageToImage = async ({
   boundingBoxWidth,
   boundingBoxHeight,
   boundingBoxAngle,
+  boundingBoxShape,
 }: ImageToImageOptions) => {
   const targetImage = await Jimp.read(imagePath);
   const imageWidth = image.getWidth();
   const imageHeight = image.getHeight();
 
-  const newWidth = Math.sqrt(
-    Math.pow(boundingBoxHeight, 2) /
-      (Math.pow(imageHeight, 2) / Math.pow(imageWidth, 2) +
-        Math.pow(boundingBoxHeight, 2) / Math.pow(boundingBoxWidth, 2))
+  const { width: newWidth, height: newHeight } = getNewDimensions(
+    imageWidth,
+    imageHeight,
+    boundingBoxWidth,
+    boundingBoxHeight,
+    boundingBoxShape
   );
-
-  const newHeight = newWidth * (imageHeight / imageWidth);
 
   try {
     image.scaleToFit(newWidth, newHeight);

@@ -1,3 +1,5 @@
+export type BoundingBoxShape = "rectangle" | "ellipse";
+
 export type SpeechBubbleOptions = {
   imagePath: string;
   overlayPath?: string;
@@ -6,6 +8,7 @@ export type SpeechBubbleOptions = {
   boundingBoxWidth: number;
   boundingBoxHeight: number;
   boundingBoxAngle: number;
+  boundingBoxShape: BoundingBoxShape;
 };
 
 export type StickerCommandOptions = {
