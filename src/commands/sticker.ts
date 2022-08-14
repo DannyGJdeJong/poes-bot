@@ -187,8 +187,8 @@ const onMessageHandler = async (
   }
 };
 
-export const registerStickerCommands = (bot: Bot, state: State) => {
-  stickers.forEach((sticker) => {
+export const registerStickerCommands = (bot: Bot, state: State): string => {
+  const stickerCommands = stickers.map((sticker) => {
     bot.command(sticker.command, async (ctx) => {
       // Split the command from the input text
       // e.g. "/nom test" becomes "test"
@@ -215,7 +215,16 @@ export const registerStickerCommands = (bot: Bot, state: State) => {
         source: stickerImage,
       });
     });
+    return sticker.command;
   });
+
+  return `${stickerCommands
+    .map(
+      (command) =>
+        `/${command} \\[text\\] \\- Creates a sticker from supplied text\\.`
+    )
+    .join("\n")}
+If no text is provided, any subsequent messages \\(text, stickers and images\\) are used to create stickers\\.`;
 };
 
 export const registerInlineCommand = (bot: Bot) => {

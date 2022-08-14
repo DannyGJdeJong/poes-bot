@@ -1,10 +1,7 @@
 import { Telegraf } from "telegraf";
 
 import { BOT_TOKEN } from "./constants";
-import {
-  registerInlineCommand,
-  registerStickerCommands,
-} from "./commands/sticker";
+import { registerCommandFunctions, registerInlineCommand } from "./commands";
 
 import type { Bot, State } from "./types";
 
@@ -14,6 +11,11 @@ const state: State = {
   pendingActions: {},
 };
 
+registerInlineCommand(bot);
+const commandsHelpText = registerCommandFunctions
+  .map((registerCommand) => registerCommand(bot, state))
+  .join("\n");
+
 bot.start(async (ctx) => {
   ctx.reply("Hello " + ctx.from.first_name + "!");
 });
@@ -21,13 +23,7 @@ bot.start(async (ctx) => {
 bot.help((ctx) => {
   ctx.replyWithMarkdownV2(`
 *Commands*:
-/nom \\[text\\] \\- Creates a sticker from text
-/heart \\[text\\] \\- Creates a sticker from text
-/meow \\[text\\] \\- Creates a sticker from text
-
-/nom - Follow up with text, a sticker or an image
-/heart - Follow up with text, a sticker or an image
-/meow - Follow up with text, a sticker or an image
+${commandsHelpText}
 
 *Auxiliary commands*:
 /start \\- Starts the bot
@@ -36,9 +32,6 @@ bot.help((ctx) => {
 });
 
 bot.command("quit", (ctx) => {});
-
-registerInlineCommand(bot);
-registerStickerCommands(bot, state);
 
 bot.on("sticker", async (ctx) => {
   const pendingAction =
