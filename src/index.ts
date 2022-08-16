@@ -33,21 +33,7 @@ ${commandsHelpText}
 
 bot.command("quit", (ctx) => {});
 
-bot.on("sticker", async (ctx) => {
-  const pendingAction =
-    state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
-
-  await pendingAction(ctx);
-});
-
-bot.on("text", async (ctx) => {
-  const pendingAction =
-    state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
-
-  await pendingAction(ctx);
-});
-
-bot.on("photo", async (ctx) => {
+bot.on("message", async (ctx) => {
   const pendingAction =
     state.pendingActions[ctx.message.from.id.toString()] || (async () => {});
 
