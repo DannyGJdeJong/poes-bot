@@ -77,6 +77,19 @@ const stickers: StickerCommandOptions[] = [
       boundingBoxShape: "ellipse",
     },
   },
+  {
+    name: "certified",
+    command: "certified",
+    speechBubbleOptions: {
+      imagePath: "./src/assets/dennicertified.png",
+      centerX: 155,
+      centerY: 209,
+      boundingBoxWidth: 132,
+      boundingBoxHeight: 60,
+      boundingBoxAngle: 11,
+      boundingBoxShape: "rectangle",
+    },
+  },
 ];
 
 const onStickerHandler = async (
